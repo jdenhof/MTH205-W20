@@ -19,7 +19,7 @@ def unit(v):
     return 1/v.norm()*v
 
 class matrix:
-    def __init__(self, *args):
+    def __init__(self, *args, as_transpose: bool = False):
         transpose = True
         if len(args) == 2:
             transpose = args[1]
@@ -28,30 +28,31 @@ class matrix:
             rows = args[0]
             cols = args[1]
             entries = args[2]
-            self.entries = np.reshape(entries, (rows, cols))
-            self.entries = self.entries.astype('float64')
-            self.rows = rows
-            self.cols = cols
+            entries = np.reshape(entries, (rows, cols))
+            entries = entries.astype('float64')
         if len(args) == 1:
             ## data frame
             if isinstance(args[0], pd.DataFrame):
-                self.entries = args[0].to_numpy()
+                entries = args[0].to_numpy()
             ## list of vectors
             elif isinstance(args[0],list) and isinstance(args[0][0],vector):
                 columns = [v.entries for v in args[0]]
-                self.entries = np.array(columns)
+                entries = np.array(columns)
             ## 2d-array, maybe numpy
             else:                   
-                self.entries = np.array(args[0])
+                entries = np.array(args[0])
             shape = np.shape(self.entries)
-            self.rows = shape[0]
-            self.cols = shape[1]
+            
             if np.can_cast(self.entries.dtype, np.float64):
-                self.entries = self.entries.astype('float64')
+                entries = self.entries.astype('float64')
+        if as_transpose:
+            entries = entries.T
+        self.rows, self.cols = entries.shape
+        self.entries = entries
         if transpose:
             self.T = matrix(self.entries.T, False)
             self.T.T = self
-
+            
     def column(self, c):
         return vector(self.entries[:, c])
     def row(self, r):
@@ -262,6 +263,13 @@ class matrix:
                 B = A*B
             return B
 
+class vmatrix(matrix):
+    
+    def __init__(*args):
+        super().__init__(
+        *args, as_transpose=True
+    )
+    
 class vector:
     def __init__(self, entries):
         self.entries = np.array(entries)
